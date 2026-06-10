@@ -77,20 +77,24 @@ bun install
 
 ## Part 3 — Build & run the barbershop as a service
 
+This project builds with **Nitro**. By default it targets Cloudflare Workers (for Lovable's own hosting). To run it as a normal Node service on your VPS, set the Nitro preset to **node-server** at build time. This is just an environment variable — it does **not** change any code, and it does not affect how Lovable publishes the site.
+
 ```bash
 cd /var/www/barbershop
-bun run build          # produces the production server bundle
 
-# Start it on port 3001 with PM2
-PORT=3001 pm2 start "bun run start" --name barbershop
+# Build a Node server bundle (note the env var)
+NITRO_PRESET=node-server bun run build
+
+# The build produces .output/server/index.mjs — run that with PM2 on port 3001
+PORT=3001 pm2 start ".output/server/index.mjs" --name barbershop --interpreter node
 
 pm2 save               # remember it across reboots
-pm2 startup            # follow the printed command once
+pm2 startup            # then run the command it prints, once
 ```
 
 Check it's alive: `curl http://localhost:3001` should return HTML.
 
-> Note: this template is configured to build for Cloudflare Workers by default. Running it as a plain Node service on the VPS may require switching the build target to a Node server output. If `bun run start` doesn't serve on the port, that's the adjustment needed — tell me and I'll set that up in the code.
+> If the build output folder differs (e.g. `.output` isn't created), run `ls -la` after the build and look for the generated `server/index.mjs` — point PM2 at that path. The `NITRO_PRESET=node-server` variable is the key part that makes it runnable outside Cloudflare.
 
 ---
 
