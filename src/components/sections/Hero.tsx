@@ -43,7 +43,7 @@ export function Hero() {
 
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <BookButton />
-          <Button asChild variant="outline" size="lg">
+          <Button asChild size="lg" className="bg-cream text-espresso hover:bg-white border-0 shadow-lg shadow-black/20">
             <a href={SHOP.phoneHref}>
               <Phone /> Call or Text {SHOP.phone}
             </a>
