@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, Phone, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { BarberPole, BookButton } from "./BookButton";
 import { SHOP } from "@/lib/shop-data";
 
@@ -28,7 +29,7 @@ export function Header() {
           </span>
         </a>
 
-        <div className="hidden items-center gap-7 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {LINKS.map((l) => (
             <a
               key={l.href}
@@ -39,6 +40,11 @@ export function Header() {
             </a>
           ))}
           <BookButton size="sm" />
+          <Button asChild size="sm" className="bg-cream text-espresso hover:bg-white border-0">
+            <a href={SHOP.phoneHref}>
+              <Phone size={16} /> Call or Text
+            </a>
+          </Button>
         </div>
 
         <button
@@ -64,6 +70,11 @@ export function Header() {
             </a>
           ))}
           <BookButton className="w-full" />
+          <Button asChild className="w-full bg-cream text-espresso hover:bg-white border-0">
+            <a href={SHOP.phoneHref}>
+              <Phone size={16} /> Call or Text {SHOP.phone}
+            </a>
+          </Button>
         </div>
       )}
     </header>
