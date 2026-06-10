@@ -1,0 +1,71 @@
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { BarberPole, BookButton } from "./BookButton";
+import { SHOP } from "@/lib/shop-data";
+
+const LINKS = [
+  { href: "#about", label: "About" },
+  { href: "#services", label: "Services" },
+  { href: "#reviews", label: "Reviews" },
+  { href: "#visit", label: "Visit" },
+];
+
+export function Header() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <header className="sticky top-0 z-50 border-b-2 border-brass bg-espresso/95 backdrop-blur-sm">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
+        <a href="#top" className="flex items-center gap-3 text-cream">
+          <BarberPole />
+          <span className="leading-tight">
+            <span className="block font-display text-lg font-bold tracking-wide">
+              {SHOP.name}
+            </span>
+            <span className="block font-condensed text-[0.62rem] uppercase tracking-[0.32em] text-brass-bright">
+              Est. {SHOP.established} · Algonquin, IL
+            </span>
+          </span>
+        </a>
+
+        <div className="hidden items-center gap-7 md:flex">
+          {LINKS.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="font-condensed text-sm uppercase tracking-[0.12em] text-cream transition-colors hover:text-brass-bright"
+            >
+              {l.label}
+            </a>
+          ))}
+          <BookButton size="sm" />
+        </div>
+
+        <button
+          type="button"
+          aria-label="Toggle menu"
+          className="text-cream md:hidden"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? <X size={26} /> : <Menu size={26} />}
+        </button>
+      </nav>
+
+      {open && (
+        <div className="flex flex-col gap-4 border-t border-brass/40 bg-espresso px-5 py-5 md:hidden">
+          {LINKS.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              onClick={() => setOpen(false)}
+              className="font-condensed text-base uppercase tracking-[0.12em] text-cream"
+            >
+              {l.label}
+            </a>
+          ))}
+          <BookButton className="w-full" />
+        </div>
+      )}
+    </header>
+  );
+}
