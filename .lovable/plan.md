@@ -62,8 +62,8 @@ sudo firewall-cmd --reload
 ## Part 2 — Get the barbershop code onto the server
 
 You need this project's source on the VPS. Two options:
-- **Connect this Lovable project to GitHub** (Lovable → GitHub button), then `git clone` it.
-- Or download/upload the project folder manually.
+- Push the project to a **Git repository** (GitHub/GitLab/etc.), then `git clone` it.
+- Or upload the project folder manually (e.g. with `scp` or SFTP).
 
 ```bash
 sudo mkdir -p /var/www
@@ -77,15 +77,15 @@ bun install
 
 ## Part 3 — Build & run the barbershop as a service
 
-This project builds with **Nitro**. By default it targets Cloudflare Workers (for Lovable's own hosting). To run it as a normal Node service on your VPS, set the Nitro preset to **node-server** at build time. This is just an environment variable — it does **not** change any code, and it does not affect how Lovable publishes the site.
+This project builds with **Nitro**. The build config is already set so that on your own server `bun run build` produces a standalone **Node server** at `.output/server/index.mjs` — ready to run with PM2.
 
 ```bash
 cd /var/www/barbershop
 
-# Build a Node server bundle (note the env var)
-NITRO_PRESET=node-server bun run build
+# Build the Node server bundle
+bun run build
 
-# The build produces .output/server/index.mjs — run that with PM2 on port 3001
+# Run it with PM2 on port 3001
 PORT=3001 pm2 start ".output/server/index.mjs" --name barbershop --interpreter node
 
 pm2 save               # remember it across reboots
@@ -94,7 +94,7 @@ pm2 startup            # then run the command it prints, once
 
 Check it's alive: `curl http://localhost:3001` should return HTML.
 
-> If the build output folder differs (e.g. `.output` isn't created), run `ls -la` after the build and look for the generated `server/index.mjs` — point PM2 at that path. The `NITRO_PRESET=node-server` variable is the key part that makes it runnable outside Cloudflare.
+> If the build output folder differs, run `ls -la .output/server` after the build and look for `index.mjs` — point PM2 at that path.
 
 ---
 
@@ -148,7 +148,7 @@ Each new site is the same 3 steps:
    ```bash
    cd /var/www && git clone <restaurant-repo> restaurant
    cd restaurant && bun install
-   NITRO_PRESET=node-server bun run build
+   bun run build
    PORT=3002 pm2 start ".output/server/index.mjs" --name restaurant --interpreter node && pm2 save
    ```
 2. **Nginx file** `/etc/nginx/conf.d/restaurant.conf` — same as Part 4 but `server_name restaurant.corelinkdev.com;` and `proxy_pass http://localhost:3002;`
@@ -162,7 +162,7 @@ Use a new port for each app (3001, 3002, 3003…). Because your DNS already has 
 
 If you truly want `/barbershop` instead of a subdomain:
 
-1. The **app code must be configured with a base path** of `/barbershop` so its assets resolve correctly. This is a code change I'd make in this project (Vite/router base config) before building — it won't work without it.
+1. The **app code must be configured with a base path** of `/barbershop` so its assets resolve correctly. This is a code change in the project (Vite/router base config) made before building — it won't work without it.
 2. Build & run on its port (same as Part 3).
 3. Nginx uses a `location` block instead of a `server_name`:
 
@@ -191,8 +191,8 @@ Each app still needs its own base path baked in at build time. This is why subdo
 
 ## What I need from you to proceed
 
-This plan is a hosting guide — no app code changes are required for the **subdomain** route. I'd only touch the codebase if you choose the **subpath** route (to set the base path) or if the Node build target needs switching for VPS hosting.
+The **subdomain** route needs no further app changes — just follow Parts 1–6 on your server. The **subpath** route needs the base-path code change first.
 
 Tell me:
 1. **Subdomain** (`barbershop.corelinkdev.com`) or **subpath** (`/barbershop`)?
-2. Do you want me to **switch the build output to a Node server** so it runs cleanly on your VPS with PM2?
+2. If subpath, confirm and I'll add the base-path config.
