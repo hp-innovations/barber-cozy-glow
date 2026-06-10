@@ -124,12 +124,12 @@ LOCATION_BLOCK=$(cat <<EOF
     location = ${BASE_PATH} { return 301 ${BASE_PATH}/; }
 
     # Serve hashed static assets directly from the build output (fast, correct MIME).
+    # NOTE: no try_files here — with alias, \$uri keeps the full request path and breaks matching.
     location ${BASE_PATH}/assets/ {
         alias ${APP_DIR}/.output/public/assets/;
         access_log off;
         expires 1y;
         add_header Cache-Control "public, immutable";
-        try_files \$uri =404;
     }
 
     location ${BASE_PATH}/ {
