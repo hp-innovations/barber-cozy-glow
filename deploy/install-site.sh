@@ -153,10 +153,10 @@ systemctl reload nginx
 
 # ---------------------------------------------------------------------------
 if [ -n "$DOMAIN" ]; then
-  log "Setting up free HTTPS for ${DOMAIN}"
+  log "Setting up free HTTPS for ${SERVER_NAME}"
   dnf install -y certbot python3-certbot-nginx >/dev/null
-  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "admin@${DOMAIN}" || \
-    echo "certbot failed (is DNS pointing here yet?). You can re-run: certbot --nginx -d ${DOMAIN}"
+  certbot --nginx $CERT_DOMAINS --non-interactive --agree-tos --redirect -m "admin@${DOMAIN}" || \
+    echo "certbot failed (is DNS pointing here yet?). You can re-run: certbot --nginx ${CERT_DOMAINS}"
 fi
 
 IP="$(curl -fsS https://api.ipify.org 2>/dev/null || echo YOUR_IP)"
