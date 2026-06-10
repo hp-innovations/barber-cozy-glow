@@ -89,7 +89,20 @@ pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------------------------
 log "Step 7/7 — Configuring Nginx for ${BASE_PATH}"
-SERVER_NAME="${DOMAIN:-_}"
+# Build the server_name + the list of -d flags for certbot.
+# For an apex domain (exactly one dot, e.g. corelinkdev.com) we also include www.
+CERT_DOMAINS=""
+if [ -n "$DOMAIN" ]; then
+  if [ "$(echo "$DOMAIN" | tr -cd '.' | wc -c)" -eq 1 ]; then
+    SERVER_NAME="${DOMAIN} www.${DOMAIN}"
+    CERT_DOMAINS="-d ${DOMAIN} -d www.${DOMAIN}"
+  else
+    SERVER_NAME="${DOMAIN}"
+    CERT_DOMAINS="-d ${DOMAIN}"
+  fi
+else
+  SERVER_NAME="_"
+fi
 touch "$NGINX_CONF"
 
 # Remove any previous block for this app (between matching markers), then append fresh.
@@ -140,10 +153,10 @@ systemctl reload nginx
 
 # ---------------------------------------------------------------------------
 if [ -n "$DOMAIN" ]; then
-  log "Setting up free HTTPS for ${DOMAIN}"
+  log "Setting up free HTTPS for ${SERVER_NAME}"
   dnf install -y certbot python3-certbot-nginx >/dev/null
-  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "admin@${DOMAIN}" || \
-    echo "certbot failed (is DNS pointing here yet?). You can re-run: certbot --nginx -d ${DOMAIN}"
+  certbot --nginx $CERT_DOMAINS --non-interactive --agree-tos --redirect -m "admin@${DOMAIN}" || \
+    echo "certbot failed (is DNS pointing here yet?). You can re-run: certbot --nginx ${CERT_DOMAINS}"
 fi
 
 IP="$(curl -fsS https://api.ipify.org 2>/dev/null || echo YOUR_IP)"
