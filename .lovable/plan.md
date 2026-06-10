@@ -1,112 +1,87 @@
-# Goal
+## Problem
 
-Run your site 100% from your CentOS VPS (`153.75.90.51`) at **`https://corelinkdev.com/barbershop`** (and `www.`), using GitHub to move the code and a single install script to do everything on the server — including free HTTPS.
+`http://corelinkdev.com/barbershop` renders as unstyled plain text. The HTML loads (200), but every CSS/JS file under `/barbershop/assets/...` fails with `net::ERR_ABORTED`.
 
-The bare IP `http://153.75.90.51/barbershop` will also work as a fallback. The subpath code change (`VITE_BASE_PATH`) and the install script (`deploy/install-site.sh`) already exist in the project — no further code changes are needed.
+Root cause: the app is built for the `/barbershop` subpath, so the HTML references assets at `/barbershop/assets/...`. The Node SSR server (Nitro) serves the SSR document at `/barbershop/`, but it serves the static asset files at the root path (`/assets/...`), not under the `/barbershop/` prefix. Asset requests therefore fall through to the SSR handler, return HTML instead of CSS/JS, and the browser aborts them — leaving the page unstyled.
 
----
+## Fix
 
-## Prerequisite — DNS must point at the server
+Have Nginx serve the hashed static files directly from the build output folder (`.output/public/assets`) for the `/barbershop/assets/` path, instead of proxying those to Node. This is the standard, reliable pattern for subpath hosting and also offloads static delivery from Node.
 
-For HTTPS to work, `corelinkdev.com` and `www.corelinkdev.com` must resolve to `153.75.90.51`. From the earlier DNS setup you added A records:
+### 1. Update `deploy/install-site.sh` (Step 7 Nginx block)
 
-```text
-A   @     153.75.90.51
-A   www   153.75.90.51
-A   *     153.75.90.51
+In the `LOCATION_BLOCK` that the script writes, add a dedicated `assets` location **before** the existing proxy `location ${BASE_PATH}/` block so Nginx's longest-prefix match serves files directly:
+
+```nginx
+    # >>> ${APP_NAME} >>>
+    location = ${BASE_PATH} { return 301 ${BASE_PATH}/; }
+
+    # Serve hashed static assets directly from the build output (fast, correct MIME).
+    location ${BASE_PATH}/assets/ {
+        alias ${APP_DIR}/.output/public/assets/;
+        access_log off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location ${BASE_PATH}/ {
+        proxy_pass http://localhost:${PORT}${BASE_PATH}/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    # <<< ${APP_NAME} <<<
 ```
 
-If those are saved, you're ready. (Check with `dig +short corelinkdev.com` — it should return `153.75.90.51`.)
+(In the heredoc, `$uri`, `$host`, etc. must stay escaped as `\$uri` so the shell doesn't expand them — same convention the script already uses for the proxy variables.)
 
----
+This change syncs to GitHub automatically.
 
-## Part A — Things only you can do (manual)
+### 2. Apply it on the server
 
-### 1. Connect this project to GitHub
-- Editor → **Plus (+) menu** (bottom-left) → **GitHub** → **Connect project**
-- Authorize, pick your account, click **Create Repository**
-- Copy the repo URL (e.g. `https://github.com/YOUR_NAME/barber-cozy-glow.git`)
-
-### 2. SSH into your server
-- `ssh root@153.75.90.51`
-
----
-
-## Part B — One command on the server
-
-Download the script from your new repo and run it **with the domain set** so it auto-configures HTTPS:
+Since DNS/HTTPS work is already done, the user re-pulls and re-runs the installer (idempotent — it regenerates the Nginx block and reloads):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_NAME/YOUR_REPO/main/deploy/install-site.sh -o install-site.sh
-chmod +x install-site.sh
-
-sudo APP_NAME=barbershop \
-     REPO_URL=https://github.com/YOUR_NAME/YOUR_REPO.git \
-     DOMAIN=corelinkdev.com \
-     ./install-site.sh
+cd /tmp/bcg && git pull
+sudo APP_NAME=barbershop REPO_URL=https://github.com/hp-innovations/barber-cozy-glow.git DOMAIN=corelinkdev.com bash /tmp/bcg/deploy/install-site.sh
 ```
 
-The script automatically:
-1. Installs Nginx, Node, git, Bun, PM2
-2. Opens the firewall + fixes SELinux
-3. Clones your repo into `/var/www/barbershop`
-4. Builds with `VITE_BASE_PATH=/barbershop`
-5. Starts the app on port 3001 with PM2 (auto-restarts on reboot)
-6. Writes the Nginx config (`server_name corelinkdev.com`) and reloads it
-7. Runs **certbot** to issue a free SSL cert and switch the site to HTTPS
+### 3. Immediate manual option (no full re-run)
 
-Result: **`https://corelinkdev.com/barbershop`** goes live. The IP URL keeps working too.
-
----
-
-## Covering `www.` too
-
-The script's `DOMAIN` handles the root domain. To also cover `www.corelinkdev.com` with HTTPS, after the script finishes run:
+If the user prefers a quick fix without re-running the whole script, edit the Nginx config directly:
 
 ```bash
-sudo certbot --nginx -d corelinkdev.com -d www.corelinkdev.com
+sudo nano /etc/nginx/conf.d/lovable-sites.conf
 ```
 
-(One-time; certbot auto-renews afterward.)
+Add this block just inside the `server { ... }`, above the existing `location /barbershop/` block:
 
----
+```nginx
+    location /barbershop/assets/ {
+        alias /var/www/barbershop/.output/public/assets/;
+        access_log off;
+        expires 1y;
+        try_files $uri =404;
+    }
+```
 
-## Updating the site later
-
-Changes you make in the editor auto-push to GitHub. To deploy them:
+Then test and reload:
 
 ```bash
-cd /var/www/barbershop
-git pull
-VITE_BASE_PATH=/barbershop bun run build
-pm2 restart barbershop
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
----
+### 4. Verify
 
-## Adding more sites later (e.g. restaurant)
+Reload `http://corelinkdev.com/barbershop` (hard refresh). The site should now appear fully styled. Confirm in DevTools → Network that `styles-*.css` and `index-*.js` return `200` instead of `ERR_ABORTED`.
 
-Same script, different name/port/path:
+## Notes
 
-```bash
-sudo APP_NAME=restaurant PORT=3002 BASE_PATH=/restaurant \
-     REPO_URL=https://github.com/YOUR_NAME/restaurant.git \
-     DOMAIN=corelinkdev.com \
-     ./install-site.sh
-```
-
-Result: `https://corelinkdev.com/restaurant`. It appends a new block to the same Nginx config — no conflicts.
-
----
-
-## Technical notes
-
-- **No code changes needed** — the subpath support and script already exist in the repo.
-- HTTPS requires DNS pointing at the server first. If certbot fails because DNS hasn't propagated yet, the HTTP site still works; just re-run `sudo certbot --nginx -d corelinkdev.com` later.
-- If anything errors on the server, paste the output back here and I'll fix it with you step by step.
-
----
-
-## What I'll do once you switch to build mode
-
-The code is already in place for this path. Once you've connected GitHub and shared your real repo URL, I can fill in the exact command for you and, if you like, double-check the script handles `www.` + the domain the way you want.
+- This also resolves the embedded Google Map and any future static images, since all bundled static files share the `/barbershop/assets/` path.
+- HTTPS is unaffected; once certbot has run, the same config serves the assets over `https://corelinkdev.com/barbershop`.
+- The earlier Node 22, `unzip`, and EPEL/certbot snags can optionally be folded into the script too (install Node 22 via NodeSource, add `unzip`, add `epel-release`) so a fresh server provisions cleanly in one pass — can be included on request.
