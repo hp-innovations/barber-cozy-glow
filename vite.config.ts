@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Self-hosting target for a normal VPS (e.g. CentOS + PM2 + Nginx).
+  // NOTE: inside Lovable's build/sandbox this is IGNORED — Lovable forces the
+  // Cloudflare preset, so publishing is unaffected. Outside Lovable (on your
+  // own server) `bun run build` produces a Node server at .output/server/index.mjs.
+  nitro: { preset: "node-server" },
 });
