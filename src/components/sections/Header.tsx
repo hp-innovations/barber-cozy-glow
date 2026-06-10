@@ -70,6 +70,11 @@ export function Header() {
             </a>
           ))}
           <BookButton className="w-full" />
+          <Button asChild className="w-full bg-cream text-espresso hover:bg-white border-0">
+            <a href={SHOP.phoneHref}>
+              <Phone size={16} /> Call or Text {SHOP.phone}
+            </a>
+          </Button>
         </div>
       )}
     </header>
