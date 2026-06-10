@@ -13,8 +13,13 @@ export default defineConfig({
     server: { entry: "server" },
   },
   // Self-hosting target for a normal VPS (e.g. CentOS + PM2 + Nginx).
-  // NOTE: inside Lovable's build/sandbox this is IGNORED — Lovable forces the
-  // Cloudflare preset, so publishing is unaffected. Outside Lovable (on your
-  // own server) `bun run build` produces a Node server at .output/server/index.mjs.
+  // On your own server `bun run build` produces a Node server at
+  // .output/server/index.mjs.
   nitro: { preset: "node-server" },
+  // Subpath hosting: when VITE_BASE_PATH is set (e.g. /barbershop), all assets
+  // and routes are served from that prefix. Unset, it defaults to "/" so the
+  // preview/build inside this environment is unaffected.
+  vite: {
+    base: process.env.VITE_BASE_PATH || "/",
+  },
 });
