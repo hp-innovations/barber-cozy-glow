@@ -147,8 +147,9 @@ Each new site is the same 3 steps:
 1. **Code + build:**
    ```bash
    cd /var/www && git clone <restaurant-repo> restaurant
-   cd restaurant && bun install && bun run build
-   PORT=3002 pm2 start "bun run start" --name restaurant && pm2 save
+   cd restaurant && bun install
+   NITRO_PRESET=node-server bun run build
+   PORT=3002 pm2 start ".output/server/index.mjs" --name restaurant --interpreter node && pm2 save
    ```
 2. **Nginx file** `/etc/nginx/conf.d/restaurant.conf` — same as Part 4 but `server_name restaurant.corelinkdev.com;` and `proxy_pass http://localhost:3002;`
 3. **Reload + SSL:** `sudo nginx -t && sudo systemctl reload nginx`, then `sudo certbot --nginx -d restaurant.corelinkdev.com`
