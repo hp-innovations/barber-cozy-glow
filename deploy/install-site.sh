@@ -122,6 +122,16 @@ fi
 LOCATION_BLOCK=$(cat <<EOF
     # >>> ${APP_NAME} >>>
     location = ${BASE_PATH} { return 301 ${BASE_PATH}/; }
+
+    # Serve hashed static assets directly from the build output (fast, correct MIME).
+    location ${BASE_PATH}/assets/ {
+        alias ${APP_DIR}/.output/public/assets/;
+        access_log off;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files \$uri =404;
+    }
+
     location ${BASE_PATH}/ {
         proxy_pass http://localhost:${PORT}${BASE_PATH}/;
         proxy_http_version 1.1;
