@@ -44,10 +44,10 @@ git reset --hard "origin/$BRANCH" >>"$LOG" 2>&1
 
 # Install deps (fast no-op when nothing changed) and build.
 log "Installing dependencies..."
-bun install >>"$LOG" 2>&1
+npm install >>"$LOG" 2>&1
 
 log "Building (VITE_BASE_PATH=$BASE_PATH)..."
-VITE_BASE_PATH="$BASE_PATH" bun run build >>"$LOG" 2>&1
+VITE_BASE_PATH="$BASE_PATH" npm run build >>"$LOG" 2>&1
 
 # Restart the Node server. The build output is .output/server/index.mjs.
 # Using pm2; if the process doesn't exist yet, start it.
