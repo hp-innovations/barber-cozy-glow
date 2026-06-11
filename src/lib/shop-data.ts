@@ -24,7 +24,7 @@ export const SERVICES = [
   { name: "Eyebrow Shaping / Wax", duration: "10 min", price: "$10" },
   { name: "Ear Wax", duration: "30 min", price: "$10" },
   { name: "Nose Wax", duration: "5 min", price: "$10" },
-  { name: "Hair Wash", duration: "10 min", price: "$7" },
+  { name: "Hair Wash", duration: "10 min", price: "$8" },
 ] as const;
 
 export const ALSO_OFFERED = [
