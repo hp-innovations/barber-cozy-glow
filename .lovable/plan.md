@@ -1,87 +1,62 @@
-## Problem
+# Auto-update: edit in Lovable → refresh your live site
 
-`http://corelinkdev.com/barbershop` renders as unstyled plain text. The HTML loads (200), but every CSS/JS file under `/barbershop/assets/...` fails with `net::ERR_ABORTED`.
+Goal: after you make a change in Lovable, your server automatically picks it up, rebuilds, and serves it — so you just refresh `corelinkdev.com/barbershop` to see the change.
 
-Root cause: the app is built for the `/barbershop` subpath, so the HTML references assets at `/barbershop/assets/...`. The Node SSR server (Nitro) serves the SSR document at `/barbershop/`, but it serves the static asset files at the root path (`/assets/...`), not under the `/barbershop/` prefix. Asset requests therefore fall through to the SSR handler, return HTML instead of CSS/JS, and the browser aborts them — leaving the page unstyled.
+## How it works (Option B — server pulls from GitHub)
 
-## Fix
-
-Have Nginx serve the hashed static files directly from the build output folder (`.output/public/assets`) for the `/barbershop/assets/` path, instead of proxying those to Node. This is the standard, reliable pattern for subpath hosting and also offloads static delivery from Node.
-
-### 1. Update `deploy/install-site.sh` (Step 7 Nginx block)
-
-In the `LOCATION_BLOCK` that the script writes, add a dedicated `assets` location **before** the existing proxy `location ${BASE_PATH}/` block so Nginx's longest-prefix match serves files directly:
-
-```nginx
-    # >>> ${APP_NAME} >>>
-    location = ${BASE_PATH} { return 301 ${BASE_PATH}/; }
-
-    # Serve hashed static assets directly from the build output (fast, correct MIME).
-    location ${BASE_PATH}/assets/ {
-        alias ${APP_DIR}/.output/public/assets/;
-        access_log off;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        try_files $uri =404;
-    }
-
-    location ${BASE_PATH}/ {
-        proxy_pass http://localhost:${PORT}${BASE_PATH}/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    # <<< ${APP_NAME} <<<
+```text
+You edit in Lovable
+      │  (auto-commits in real time)
+      ▼
+   GitHub repository
+      │  (your server pulls every 2 min via cron)
+      ▼
+  Server: git pull → bun run build → restart Node process
+      │
+      ▼
+Refresh corelinkdev.com/barbershop → change is live
 ```
 
-(In the heredoc, `$uri`, `$host`, etc. must stay escaped as `\$uri` so the shell doesn't expand them — same convention the script already uses for the proxy variables.)
+No SSH keys to hand out, no cloud robot. Your server only reaches *out* to GitHub, which is the most secure and simplest setup for your case.
 
-This change syncs to GitHub automatically.
+## Important detail about your project
 
-### 2. Apply it on the server
+This is a TanStack Start app, not static HTML. The build produces a Node server (`.output/server/index.mjs`), which you run (likely with PM2) behind nginx. The sub-path is controlled by the `VITE_BASE_PATH=/barbershop` environment variable at build time. The deploy script must always set that variable before building, or the `/barbershop/assets/...` URLs will break.
 
-Since DNS/HTTPS work is already done, the user re-pulls and re-runs the installer (idempotent — it regenerates the Nginx block and reloads):
+## Steps
 
-```bash
-cd /tmp/bcg && git pull
-sudo APP_NAME=barbershop REPO_URL=https://github.com/hp-innovations/barber-cozy-glow.git DOMAIN=corelinkdev.com bash /tmp/bcg/deploy/install-site.sh
-```
+### 1. Connect Lovable to GitHub (in Lovable, one-time)
+- Plus (`+`) menu → GitHub → Connect project → create the repository.
+- From now on every edit you make here auto-commits to that repo.
 
-### 3. Immediate manual option (no full re-run)
+### 2. Clone the repo onto your server (one-time)
+On the server, clone the GitHub repo into a working folder, e.g. `/var/www/barbershop`. This replaces the manual upload process you were doing before — the repo becomes the live source.
 
-If the user prefers a quick fix without re-running the whole script, edit the Nginx config directly:
+### 3. Create a deploy script on the server (one-time)
+A small `deploy.sh` that:
+- `git pull` the latest from GitHub
+- only continues if something actually changed (avoids needless rebuilds)
+- `bun install` (in case dependencies changed)
+- `VITE_BASE_PATH=/barbershop bun run build`
+- restart the Node app (`pm2 restart barbershop` or your process manager)
 
-```bash
-sudo nano /etc/nginx/conf.d/lovable-sites.conf
-```
+### 4. Schedule it with cron (one-time)
+Add a cron entry that runs `deploy.sh` every 1–2 minutes. Result: within ~2 min of editing in Lovable, your server rebuilds and the live site updates on refresh.
 
-Add this block just inside the `server { ... }`, above the existing `location /barbershop/` block:
+### 5. Verify
+- Make a small visible change in Lovable (e.g. a heading).
+- Wait ~2 min, refresh `corelinkdev.com/barbershop`, confirm it appears.
+- Check the cron log to confirm clean pulls/builds.
 
-```nginx
-    location /barbershop/assets/ {
-        alias /var/www/barbershop/.output/public/assets/;
-        access_log off;
-        expires 1y;
-        try_files $uri =404;
-    }
-```
+## What I'll provide when you implement
+Since this lives on your server (outside Lovable), I can't run these commands for you, but I'll give you the exact copy-paste commands and file contents:
+- the `git clone` command
+- the full `deploy.sh` (with the `VITE_BASE_PATH` build, change-detection, and PM2 restart)
+- the exact `crontab` line and how to view its log
+- the nginx note to confirm it proxies to the Node app correctly
 
-Then test and reload:
+## Optional upgrade later
+If you ever want zero-delay (instant) updates instead of the ~2-min cron window, we can switch to a GitHub webhook that triggers the same `deploy.sh` the moment you make a change. The cron approach is the recommended starting point.
 
-```bash
-sudo nginx -t && sudo systemctl reload nginx
-```
-
-### 4. Verify
-
-Reload `http://corelinkdev.com/barbershop` (hard refresh). The site should now appear fully styled. Confirm in DevTools → Network that `styles-*.css` and `index-*.js` return `200` instead of `ERR_ABORTED`.
-
-## Notes
-
-- This also resolves the embedded Google Map and any future static images, since all bundled static files share the `/barbershop/assets/` path.
-- HTTPS is unaffected; once certbot has run, the same config serves the assets over `https://corelinkdev.com/barbershop`.
-- The earlier Node 22, `unzip`, and EPEL/certbot snags can optionally be folded into the script too (install Node 22 via NodeSource, add `unzip`, add `epel-release`) so a fresh server provisions cleanly in one pass — can be included on request.
+## One thing to confirm
+What folder do you want the repo to live in on the server (e.g. `/var/www/barbershop`), and are you currently running the app with **PM2** or something else (systemd, plain `node`)? That determines the exact restart command in the deploy script.
