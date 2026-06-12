@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# One-shot installer for hosting this SSR site on an Ubuntu 24.04 VPS under a
-# subpath (e.g. http://YOUR_IP/barbershop). Run it as a sudo-capable user.
+# subpath under /demo (e.g. https://corelinkdev.com/demo/barbershop). Run it
+# as a sudo-capable user. Every demo site lives under /demo/<name>, so you can
+# host many of them side by side on one server/domain.
 #
 # This is the Ubuntu twin of deploy/install-site.sh (which targets CentOS).
 # Differences vs CentOS: uses apt-get instead of dnf, ufw instead of
@@ -9,24 +10,29 @@
 #
 # USAGE EXAMPLES
 # --------------
-# 1) Code already uploaded to /var/www/barbershop, host at /barbershop on port 3001:
+# 1) Code already in /var/www/barbershop, host at /demo/barbershop on port 3001:
 #      sudo APP_NAME=barbershop ./install-ubuntu.sh
 #
 # 2) Clone from a git repo first:
 #      sudo APP_NAME=barbershop REPO_URL=https://github.com/you/barbershop.git ./install-ubuntu.sh
 #
-# 3) Add a second site (restaurant) on a different port/path:
-#      sudo APP_NAME=restaurant PORT=3002 BASE_PATH=/restaurant \
+# 3) Add a second demo (restaurant) on a different port — auto path /demo/restaurant:
+#      sudo APP_NAME=restaurant PORT=3002 \
 #           REPO_URL=https://github.com/you/restaurant.git ./install-ubuntu.sh
 #
 # 4) Use a domain + free HTTPS (must point DNS at this server first):
-#      sudo APP_NAME=barbershop DOMAIN=barbershop.example.com ./install-ubuntu.sh
+#      sudo APP_NAME=barbershop DOMAIN=corelinkdev.com ./install-ubuntu.sh
+#      -> serves https://corelinkdev.com/demo/barbershop
+#
+# 5) Override the subpath entirely (e.g. host at root /barbershop instead of /demo):
+#      sudo APP_NAME=barbershop BASE_PATH=/barbershop ./install-ubuntu.sh
 #
 # CONFIG (override any of these with env vars)
 # -------------------------------------------
-APP_NAME="${APP_NAME:-barbershop}"      # PM2 process name + folder name
-BASE_PATH="${BASE_PATH:-/${APP_NAME}}"  # URL subpath, e.g. /barbershop
-PORT="${PORT:-3001}"                    # internal port this app listens on
+APP_NAME="${APP_NAME:-barbershop}"          # PM2 process name + folder name
+DEMO_ROOT="${DEMO_ROOT:-/demo}"             # parent folder for all demo sites
+BASE_PATH="${BASE_PATH:-${DEMO_ROOT}/${APP_NAME}}"  # URL subpath, e.g. /demo/barbershop
+PORT="${PORT:-3001}"                        # internal port this app listens on
 APP_DIR="${APP_DIR:-/var/www/${APP_NAME}}"
 REPO_URL="${REPO_URL:-}"                # optional: git URL to clone
 DOMAIN="${DOMAIN:-}"                    # optional: domain for server_name + HTTPS
