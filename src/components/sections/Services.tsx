@@ -47,7 +47,6 @@ export function Services() {
 
         <div className="mt-10 flex flex-col items-center gap-3">
           <BookButton>Book Your Service</BookButton>
-          <GiftCardButton />
         </div>
       </div>
     </section>
