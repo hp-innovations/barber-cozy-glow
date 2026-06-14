@@ -1,6 +1,5 @@
 import { SERVICES, ALSO_OFFERED } from "@/lib/shop-data";
 import { BookButton } from "./BookButton";
-import { GiftCardButton } from "./GiftCardButton";
 import { SectionHeading } from "./About";
 
 export function Services() {
