@@ -1,5 +1,4 @@
 import { BookButton } from "./BookButton";
-import { GiftCardButton } from "./GiftCardButton";
 
 export function FinalCTA() {
   return (
@@ -14,7 +13,6 @@ export function FinalCTA() {
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <BookButton>Book Online Now</BookButton>
-          <GiftCardButton />
         </div>
       </div>
     </section>

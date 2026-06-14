@@ -1,6 +1,5 @@
 import { SERVICES, ALSO_OFFERED } from "@/lib/shop-data";
 import { BookButton } from "./BookButton";
-import { GiftCardButton } from "./GiftCardButton";
 import { SectionHeading } from "./About";
 
 export function Services() {
@@ -48,7 +47,6 @@ export function Services() {
 
         <div className="mt-10 flex flex-col items-center gap-3">
           <BookButton>Book Your Service</BookButton>
-          <GiftCardButton />
         </div>
       </div>
     </section>
