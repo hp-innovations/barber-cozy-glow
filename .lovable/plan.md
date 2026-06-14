@@ -1,120 +1,38 @@
-# Ubuntu 24.04 Server Setup (same as your CentOS 9 deploy)
+# Stripe Embedded Checkout (in-page modal)
 
-This does exactly what we set up on CentOS 9 — host the SSR site under a subpath (e.g. `/barbershop`), run it with PM2, serve it through Nginx, and auto-deploy from GitHub every 2 minutes via cron. The only real differences from CentOS are the package manager (`apt` instead of `dnf`) and the firewall (`ufw` instead of `firewalld`); there's no SELinux on Ubuntu.
+Replace the current iframe approach (which Stripe blocks) with Stripe's official **Embedded Checkout** — the card form renders directly inside a modal on your site. No new tab, no leaving your brand. We'll use your existing Stripe **Price** for the gift card.
 
-## What I'll add to the repo
+## How it works
+1. A small secure backend endpoint creates a Stripe Checkout Session (embedded mode) using your Price ID and your secret key, and returns a `client_secret`.
+2. The "Buy a Gift Card" button opens a modal. Stripe.js (loaded from a `<script>` tag — no npm packages) mounts the official payment form inside that modal using the `client_secret`.
+3. After payment, the customer sees Stripe's confirmation right inside the modal and stays on your site.
 
-A new `deploy/install-ubuntu.sh` — the Ubuntu twin of the existing `deploy/install-site.sh`. Same flags and behavior, adapted for Ubuntu 24.04:
-- `apt-get` for Nginx, Node.js, Git, curl
-- `ufw` firewall rules (instead of `firewall-cmd`)
-- No SELinux step (not present on Ubuntu)
-- Bun + PM2 install, build with `VITE_BASE_PATH`, PM2 start + boot persistence, Nginx subpath config, optional domain + HTTPS via certbot
+## What I need from you (during build)
+- **Stripe Price ID** — looks like `price_xxxxxxxxxxxx` (found in Stripe Dashboard → Products → your gift card → Pricing).
+- **Stripe Secret key** — `sk_live_...` (Dashboard → Developers → API keys). I'll prompt you to paste it into a secure secret store; it's never put in the code or sent to the browser.
 
-Everything else (the deploy loop, `deploy.sh`, the cron job) is identical to what you already have, because those are OS-agnostic.
+## Implementation steps
 
----
+1. **Enable the backend** (Lovable Cloud) so we can run server code and store the secret key securely.
 
-## Manual step-by-step (what you run on the new Ubuntu box)
+2. **Store the secret key** as `STRIPE_SECRET_KEY` via the secure secrets prompt.
 
-### Step 0 — Connect & become root
-```bash
-ssh youruser@YOUR_SERVER_IP
-sudo -i
-```
+3. **Create a server endpoint** (`src/routes/api/create-checkout-session.ts`) that:
+   - Calls Stripe's REST API (`/v1/checkout/sessions`) with `ui_mode=embedded`, your Price ID, `mode=payment`, and a `return_url`.
+   - Returns `{ clientSecret }` to the browser.
+   - Uses `STRIPE_SECRET_KEY` from the server environment (calls Stripe over HTTPS with `fetch` — no Stripe SDK / npm package needed).
 
-### Step 1 — Install system packages
-```bash
-apt-get update
-apt-get install -y nginx git curl
-# Node.js 20 LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt-get install -y nodejs
-systemctl enable --now nginx
-```
+4. **Add a checkout return route** (`src/routes/checkout-return.tsx`) that confirms the session status and shows a success/processing message.
 
-### Step 2 — Install Bun + PM2
-```bash
-export BUN_INSTALL=/usr/local
-curl -fsSL https://bun.sh/install | bash
-npm install -g pm2
-```
+5. **Rewrite `GiftCardButton.tsx`** to:
+   - Keep the existing outline button + `Gift` icon and the dark-backdrop centered modal (full-screen on mobile, ~520×700 on desktop) with the close (X) button.
+   - On open: load `https://js.stripe.com/v3/` (once), call the new endpoint for a `client_secret`, then `stripe.initEmbeddedCheckout({ clientSecret })` and `.mount()` into a div inside the modal.
+   - Clean up / `destroy()` the embedded instance when the modal closes.
+   - Show a loading spinner while the form initializes.
 
-### Step 3 — Open the firewall
-```bash
-ufw allow 'Nginx Full'    # opens 80 + 443
-ufw allow OpenSSH         # keep SSH open so you don't lock yourself out
-ufw --force enable
-```
-
-### Step 4 — Get the code
-```bash
-git clone <YOUR_GITHUB_REPO_URL> /var/www/barbershop
-cd /var/www/barbershop
-```
-
-### Step 5 — Build with the subpath
-```bash
-bun install
-VITE_BASE_PATH=/barbershop bun run build
-```
-This produces the server at `.output/server/index.mjs`.
-
-### Step 6 — Start with PM2 + survive reboots
-```bash
-PORT=3001 pm2 start .output/server/index.mjs --name barbershop --interpreter node
-pm2 save
-pm2 startup systemd
-```
-Run the one command PM2 prints out (it enables boot startup).
-
-### Step 7 — Configure Nginx for the subpath
-Create `/etc/nginx/conf.d/lovable-sites.conf` with a server block that:
-- redirects `/barbershop` → `/barbershop/`
-- serves hashed assets from `.output/public/assets/`
-- proxies `/barbershop/` to `http://localhost:3001/barbershop/`
-
-(Identical to the CentOS Nginx block — same paths on Ubuntu.) Then:
-```bash
-nginx -t
-systemctl reload nginx
-```
-
-### Step 8 — Auto-deploy cron (every 2 min)
-The repo's `deploy.sh` already handles fetch → detect change → pull → build → PM2 restart. Just register it:
-```bash
-chmod +x /var/www/barbershop/deploy.sh
-(crontab -l 2>/dev/null; echo '*/2 * * * * /var/www/barbershop/deploy.sh >> /var/www/barbershop/deploy.log 2>&1') | crontab -
-crontab -l
-```
-
-### Step 9 — (Optional) Domain + free HTTPS
-```bash
-apt-get install -y certbot python3-certbot-nginx
-certbot --nginx -d yourdomain.com -d www.yourdomain.com --redirect
-```
-
----
-
-## The one-command alternative
-
-Once `deploy/install-ubuntu.sh` is in the repo, instead of Steps 1–7 you can just run:
-```bash
-git clone <REPO_URL> /var/www/barbershop
-cd /var/www/barbershop
-sudo APP_NAME=barbershop PORT=3001 BASE_PATH=/barbershop ./deploy/install-ubuntu.sh
-```
-Then do Step 8 (cron) and optionally Step 9 (domain).
-
----
-
-## Verify it works
-```bash
-curl http://localhost:3001/barbershop      # local check
-pm2 list                                   # process running
-tail -f /var/www/barbershop/deploy.log     # watch auto-deploys
-```
-Then visit `http://YOUR_SERVER_IP/barbershop` in a browser. After this, any change you make in Lovable pushes to GitHub and the server picks it up within ~2 minutes — no manual steps.
+6. Leave the two existing button placements (Services section + footer CTA) and all current styles/layout untouched.
 
 ## Technical notes
-- Node-server preset is already set in `vite.config.ts` (`nitro: { preset: "node-server" }`), so `bun run build` emits `.output/server/index.mjs` — same as CentOS.
-- I'll also save an Ubuntu auto-deploy memory entry so future sessions know this workflow exists for Ubuntu too.
+- Publishable key (`pk_live_...`, already known) is safe in client code; the secret key stays server-only.
+- No Stripe npm packages are installed — Stripe.js comes from the script tag and the backend talks to Stripe's REST API via `fetch`.
+- The endpoint validates input and only ever uses the fixed Price ID server-side, so the amount can't be tampered with from the browser.
