@@ -1,31 +1,53 @@
+import { useState } from "react";
+import { Gift, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const STRIPE_PAYMENT_URL = "https://buy.stripe.com/00w28q4Mo9Pr9O4eMr7N600";
+
 export function GiftCardButton({ className }: { className?: string }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <div className={className}>
-      <p
-        style={{
-          textAlign: "center",
-          fontSize: "0.875rem",
-          color: "inherit",
-        }}
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className={className}
+        onClick={() => setOpen(true)}
       >
-        🎁 Purchase a Gift Card
-      </p>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          marginTop: "16px",
-        }}
-      >
+        <Gift className="mr-2 h-4 w-4" />
+        Buy a Gift Card
+      </Button>
+
+      {open && (
         <div
-          dangerouslySetInnerHTML={{
-            __html: `<stripe-buy-button
-  buy-button-id="buy_btn_1TiDV9AoXwPbd00dfd1PkRNX"
-  publishable-key="pk_live_51ThsetAoXwPbd00dMPgAWIHjCNeIyEhnC9J65ia51ToLOaGVKRHc6DzYueafloW4xMmYkd8QNROBdeK7EFisFY3P00IYomW5ze"
-></stripe-buy-button>`,
-          }}
-        />
-      </div>
-    </div>
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-0 sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-background shadow-2xl sm:h-[700px] sm:w-[520px] sm:rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow transition-colors hover:bg-accent"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <iframe
+              src={STRIPE_PAYMENT_URL}
+              title="Buy a Gift Card"
+              className="h-full w-full border-0"
+              allow="payment"
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
