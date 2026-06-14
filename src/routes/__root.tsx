@@ -108,6 +108,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        <script async src="https://js.stripe.com/v3/buy-button.js"></script>
       </head>
       <body>
         {children}
