@@ -1,5 +1,4 @@
 import { BookButton } from "./BookButton";
-import { GiftCardButton } from "./GiftCardButton";
 
 export function FinalCTA() {
   return (
