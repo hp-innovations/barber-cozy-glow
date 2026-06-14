@@ -1,44 +1,31 @@
-import { useState } from "react";
-import { Gift } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-export function GiftCardButton({
-  className,
-  size = "lg",
-}: {
-  className?: string;
-  size?: "default" | "sm" | "lg";
-}) {
-  const [open, setOpen] = useState(false);
-
+export function GiftCardButton({ className }: { className?: string }) {
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size={size} className={className}>
-          <Gift className="mr-2 h-4 w-4" />
-          Buy a Gift Card
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="p-0 gap-0 overflow-hidden flex flex-col max-w-none w-[95vw] h-[90dvh] sm:w-[520px] sm:h-[700px]">
-        <DialogTitle className="sr-only">Buy a Gift Card</DialogTitle>
-        <div className="h-12 bg-background border-b border-border flex items-center justify-center relative shrink-0">
-          <span className="text-sm font-medium text-foreground">
-            Buy a Gift Card
-          </span>
-        </div>
-        <iframe
-          src="https://buy.stripe.com/00w28q4Mo9Pr9O4eMr7N600"
-          title="Stripe Gift Card Payment"
-          className="w-full flex-1 border-0 bg-white"
-          allow="payment"
+    <div className={className}>
+      <p
+        style={{
+          textAlign: "center",
+          fontSize: "0.875rem",
+          color: "inherit",
+        }}
+      >
+        🎁 Purchase a Gift Card
+      </p>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          marginTop: "16px",
+        }}
+      >
+        <div
+          dangerouslySetInnerHTML={{
+            __html: `<stripe-buy-button
+  buy-button-id="buy_btn_1TiDV9AoXwPbd00dfd1PkRNX"
+  publishable-key="pk_live_51ThsetAoXwPbd00dMPgAWIHjCNeIyEhnC9J65ia51ToLOaGVKRHc6DzYueafloW4xMmYkd8QNROBdeK7EFisFY3P00IYomW5ze"
+></stripe-buy-button>`,
+          }}
         />
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
