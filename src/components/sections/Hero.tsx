@@ -31,7 +31,7 @@ export function Hero() {
         </span>
 
         <h1 className="font-display text-[clamp(2.4rem,6vw,4.4rem)] font-black drop-shadow-md">
-          Harry.
+          A Classic Cut
           <br />
           <em className="italic text-brass-bright">A Warm Welcome.</em>
         </h1>
