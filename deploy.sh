@@ -16,9 +16,9 @@
 set -euo pipefail
 
 # ---- Configuration -----------------------------------------------------------
-APP_DIR="${APP_DIR:-/var/www/barbershop}"   # where the repo is cloned
+APP_DIR="${APP_DIR:-/var/www/demo/barbershop}"   # where the repo is cloned
 BRANCH="${BRANCH:-main}"                     # git branch Lovable pushes to
-BASE_PATH="${VITE_BASE_PATH:-/barbershop}"   # subpath nginx serves from
+BASE_PATH="${VITE_BASE_PATH:-/demo/barbershop}"   # subpath nginx serves from
 PM2_NAME="${PM2_NAME:-barbershop}"           # pm2 process name
 LOG="${DEPLOY_LOG:-$APP_DIR/deploy.log}"     # log file
 # -----------------------------------------------------------------------------
