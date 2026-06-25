@@ -56,7 +56,7 @@ if pm2 describe "$PM2_NAME" >/dev/null 2>&1; then
   pm2 restart "$PM2_NAME" >>"$LOG" 2>&1
 else
   log "Starting pm2 process '$PM2_NAME'..."
-  PORT="${PORT:-3000}" pm2 start .output/server/index.mjs --name "$PM2_NAME" >>"$LOG" 2>&1
+  PORT="${PORT:-3001}" pm2 start .output/server/index.mjs --name "$PM2_NAME" >>"$LOG" 2>&1
 fi
 
 log "Deploy complete."
