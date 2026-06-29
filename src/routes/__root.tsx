@@ -73,16 +73,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Algonquin Barber Shop" },
-      { name: "description", content: "Cozy Barber Connect is a single-page website for a barber shop." },
-      { name: "author", content: "CoreLinkDev" },
-      { property: "og:title", content: "Algonquin Barber Shop" },
-      { property: "og:description", content: "Cozy Barber Connect is a single-page website for a barber shop." },
+      { title: "Algonquin Barber Shop | Classic Cuts in Algonquin, IL" },
+      {
+        name: "description",
+        content:
+          "Algonquin Barber Shop — 4.8-star classic barbering in Algonquin, IL. Skin fades, beard trims, hot-lather shaves & kid's cuts. Book online.",
+      },
+      { name: "author", content: "Algonquin Barber Shop" },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Algonquin Barber Shop" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@algonquinbarber" },
-      { name: "twitter:title", content: "Algonquin Barber Shop" },
-      { name: "twitter:description", content: "Cozy Barber Connect is a single-page website for a barber shop." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
