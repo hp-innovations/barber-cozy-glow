@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { BarberPole, BookButton } from "./BookButton";
 import { SHOP } from "@/lib/shop-data";
 
-const LINKS = [
+const LINKS: { to: string; label: string; exact?: boolean }[] = [
   { to: "/", label: "Home", exact: true },
   { to: "/about", label: "About" },
   { to: "/services", label: "Services" },
   { to: "/reviews", label: "Reviews" },
   { to: "/contact", label: "Contact" },
-] as const;
+];
 
 export function Header() {
   const [open, setOpen] = useState(false);
