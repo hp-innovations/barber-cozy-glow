@@ -10,7 +10,7 @@ const TITLE = "Services & Pricing | Algonquin Barber Shop";
 const DESCRIPTION =
   "Full service menu & honest pricing at Algonquin Barber Shop — haircuts, skin fades, beard trims, head shaves, kid's cuts and more. Book online with Booksy.";
 
-export const Route = createFileRoute("/services")({
+export const Route = createFileRoute("/services/")({
   head: () => {
     const base = buildMeta({ title: TITLE, description: DESCRIPTION, path: "/services" });
     return {
