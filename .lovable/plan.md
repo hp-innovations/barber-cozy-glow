@@ -1,38 +1,49 @@
-# Stripe Embedded Checkout (in-page modal)
+# SEO-Professional Multi-Page Rebuild
 
-Replace the current iframe approach (which Stripe blocks) with Stripe's official **Embedded Checkout** — the card form renders directly inside a modal on your site. No new tab, no leaving your brand. We'll use your existing Stripe **Price** for the gift card.
+Turn the current single scrolling page into a properly structured, search-optimized website with real routes, one dedicated page per service, and full crawler support — built the way a senior web developer would.
 
-## How it works
-1. A small secure backend endpoint creates a Stripe Checkout Session (embedded mode) using your Price ID and your secret key, and returns a `client_secret`.
-2. The "Buy a Gift Card" button opens a modal. Stripe.js (loaded from a `<script>` tag — no npm packages) mounts the official payment form inside that modal using the `client_secret`.
-3. After payment, the customer sees Stripe's confirmation right inside the modal and stays on your site.
+## New site structure
 
-## What I need from you (during build)
-- **Stripe Price ID** — looks like `price_xxxxxxxxxxxx` (found in Stripe Dashboard → Products → your gift card → Pricing).
-- **Stripe Secret key** — `sk_live_...` (Dashboard → Developers → API keys). I'll prompt you to paste it into a secure secret store; it's never put in the code or sent to the browser.
+```text
+/                      Home (hero + condensed previews, links into deep pages)
+/about                 The shop story, barbers, trust badges
+/services              Services hub — all services as linked cards + pricing
+/services/skin-fade    One full page per service (10 pages)
+/services/haircut
+/services/...          (every service from the menu)
+/reviews               All customer reviews + rating summary
+/contact               Visit, hours, map, phone, Booksy
+/sitemap.xml           Auto-generated crawler sitemap
+robots.txt             Crawler rules + sitemap link
+```
 
-## Implementation steps
+Each service in the menu (Haircut, Skin Fade, Haircut & Beard Combo, Head Shave, Kid's Haircut, Beard Trim, Eyebrow Shaping, Ear Wax, Nose Wax, Hair Wash) becomes its own indexable page with a unique title, description, longer write-up, price, duration, and a "Book Online" CTA.
 
-1. **Enable the backend** (Lovable Cloud) so we can run server code and store the secret key securely.
+## What makes it SEO-professional
 
-2. **Store the secret key** as `STRIPE_SECRET_KEY` via the secure secrets prompt.
+- **Real routes, not hash anchors** — every section becomes a server-rendered URL Google can index separately (today `/#services` is invisible to crawlers).
+- **Unique metadata per page** — distinct `<title>`, meta description, canonical link, and Open Graph tags on every route, all self-referencing the correct URL.
+- **Structured data (JSON-LD)** — `BarberShop` + `LocalBusiness` on the home page, a `Service` schema on each service page, and `BreadcrumbList` on deep pages so search engines understand the hierarchy and can show rich results.
+- **Local SEO** — consistent NAP (name, address, phone), opening hours, geo data, and aggregate rating wired into structured data for Google's local/maps results.
+- **Semantic HTML & accessibility** — single `<h1>` per page, logical heading order, descriptive link text, image alt attributes, and visible breadcrumbs.
+- **Internal linking** — home links to each section, the services hub links to each service page, and each service page links back to the hub and to Contact, spreading link equity.
+- **Crawler files** — dynamic `sitemap.xml` listing all routes and a `robots.txt` pointing to it.
 
-3. **Create a server endpoint** (`src/routes/api/create-checkout-session.ts`) that:
-   - Calls Stripe's REST API (`/v1/checkout/sessions`) with `ui_mode=embedded`, your Price ID, `mode=payment`, and a `return_url`.
-   - Returns `{ clientSecret }` to the browser.
-   - Uses `STRIPE_SECRET_KEY` from the server environment (calls Stripe over HTTPS with `fetch` — no Stripe SDK / npm package needed).
+## Technical implementation
 
-4. **Add a checkout return route** (`src/routes/checkout-return.tsx`) that confirms the session status and shows a success/processing message.
+1. **Shared SEO helper** (`src/lib/seo.ts`): a `BASE_URL` constant plus a `buildMeta()` helper so every route produces consistent title/description/canonical/OG tags. Centralizing the domain makes it trivial to point at your real domain later.
+2. **Expand service data** (`src/lib/shop-data.ts`): add `slug`, `tagline`, and a paragraph of SEO copy to each service so each page has unique, substantial content (thin/duplicate pages hurt ranking).
+3. **Route files** under `src/routes/`: `about.tsx`, `services.tsx` (hub), `services.$slug.tsx` (dynamic per-service page with `notFound()` for unknown slugs), `reviews.tsx`, `contact.tsx` — each with its own `head()` metadata and JSON-LD.
+4. **Reuse existing section components** — the current `About`, `Services`, `Reviews`, and `Visit` UI move into their matching routes, so the look stays identical; only the structure changes.
+5. **Rework the home page** (`index.tsx`) into a true landing page: hero + short teasers of each section, each linking to its full page.
+6. **Navigation** — convert `Header.tsx` and `Footer.tsx` from `<a href="#...">` to TanStack `<Link to="...">` so navigation is client-routed and crawlable. Mobile menu updated to match.
+7. **Root defaults** (`__root.tsx`): sitewide OG `site_name`, default `og:type`, and Organization JSON-LD; page-specific tags stay on leaf routes.
+8. **Crawler files**: `src/routes/sitemap[.]xml.ts` (server route emitting all URLs) and `public/robots.txt`.
+9. **Subpath-safe** — all internal navigation uses `<Link>`, which respects the existing `VITE_BASE_PATH=/barbershop` setup, so your VPS deployment keeps working.
 
-5. **Rewrite `GiftCardButton.tsx`** to:
-   - Keep the existing outline button + `Gift` icon and the dark-backdrop centered modal (full-screen on mobile, ~520×700 on desktop) with the close (X) button.
-   - On open: load `https://js.stripe.com/v3/` (once), call the new endpoint for a `client_secret`, then `stripe.initEmbeddedCheckout({ clientSecret })` and `.mount()` into a div inside the modal.
-   - Clean up / `destroy()` the embedded instance when the modal closes.
-   - Show a loading spinner while the form initializes.
+## Notes
 
-6. Leave the two existing button placements (Services section + footer CTA) and all current styles/layout untouched.
-
-## Technical notes
-- Publishable key (`pk_live_...`, already known) is safe in client code; the secret key stays server-only.
-- No Stripe npm packages are installed — Stripe.js comes from the script tag and the backend talks to Stripe's REST API via `fetch`.
-- The endpoint validates input and only ever uses the fixed Price ID server-side, so the amount can't be tampered with from the browser.
+- Canonical/OG URLs default to the project's `lovable.app` domain via the `BASE_URL` constant. If you want them to use `corelinkdev.com/barbershop` instead, tell me and I'll set that as the base.
+- The visual design, colors, fonts, and content stay the same — this is a structural/SEO upgrade, not a redesign.
+- No `og:image` is added unless you want one generated (a missing image previews better than a generic placeholder).
+- After building, I can run an SEO review scan to confirm everything passes.
