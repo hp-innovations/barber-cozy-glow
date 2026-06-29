@@ -36,7 +36,7 @@ export function Header() {
             <Link
               key={l.to}
               to={l.to}
-              activeOptions={{ exact: l.exact ?? false }}
+              activeOptions={{ exact: l.exact }}
               activeProps={{ className: "text-brass-bright" }}
               className="font-condensed text-sm uppercase tracking-[0.12em] text-cream transition-colors hover:text-brass-bright"
             >
@@ -67,7 +67,7 @@ export function Header() {
             <Link
               key={l.to}
               to={l.to}
-              activeOptions={{ exact: l.exact ?? false }}
+              activeOptions={{ exact: l.exact }}
               activeProps={{ className: "text-brass-bright" }}
               onClick={() => setOpen(false)}
               className="font-condensed text-base uppercase tracking-[0.12em] text-cream"
