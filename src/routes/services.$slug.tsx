@@ -96,7 +96,7 @@ function ServiceDetail() {
           </div>
 
           <div className="mt-8 space-y-5 text-coffee">
-            {service.blurb.map((p) => (
+            {service.blurb.map((p: string) => (
               <p key={p}>{p}</p>
             ))}
           </div>
@@ -104,7 +104,7 @@ function ServiceDetail() {
           <div className="mt-8 rounded-xl border border-brass/30 bg-paper p-6">
             <h2 className="font-display text-xl text-leather">What's Included</h2>
             <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {service.includes.map((inc) => (
+              {service.includes.map((inc: string) => (
                 <li key={inc} className="flex items-center gap-2 text-coffee">
                   <Check size={16} className="shrink-0 text-brass" /> {inc}
                 </li>
