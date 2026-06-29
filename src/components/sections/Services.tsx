@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { SERVICES, ALSO_OFFERED } from "@/lib/shop-data";
 import { BookButton } from "./BookButton";
 import { SectionHeading } from "./About";
@@ -9,27 +11,34 @@ export function Services() {
         <SectionHeading
           eyebrow="The Menu"
           title="Services & Pricing"
-          sub="Honest pricing for quality work. Reserve your time online in seconds with Booksy."
+          sub="Honest pricing for quality work. Tap any service for details, or reserve your time online in seconds with Booksy."
         />
 
         <div className="grid gap-x-12 sm:grid-cols-2">
           {SERVICES.map((s) => (
-            <div
-              key={s.name}
-              className="flex items-baseline justify-between gap-3 border-b border-dashed border-brass/40 py-4"
+            <Link
+              key={s.slug}
+              to="/services/$slug"
+              params={{ slug: s.slug }}
+              className="group flex items-baseline justify-between gap-3 border-b border-dashed border-brass/40 py-4 transition-colors hover:border-brass"
             >
               <div>
-                <span className="font-condensed text-base tracking-wide text-coffee">
+                <span className="flex items-center gap-1 font-condensed text-base tracking-wide text-coffee group-hover:text-leather">
                   {s.name}
+                  <ChevronRight
+                    size={15}
+                    className="text-brass opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-hidden="true"
+                  />
                 </span>
                 <span className="block text-xs text-muted-foreground">
-                  {s.duration}
+                  {s.duration} · {s.tagline}
                 </span>
               </div>
               <span className="whitespace-nowrap font-display text-lg font-bold text-leather">
                 {s.price}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
 
