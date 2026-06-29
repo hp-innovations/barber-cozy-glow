@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://barber-cozy-glow.lovable.app/sitemap.xml
