@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { Menu, Phone, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { BarberPole, BookButton } from "./BookButton";
 import { SHOP } from "@/lib/shop-data";
 
 const LINKS = [
-  { href: "#about", label: "About" },
-  { href: "#services", label: "Services" },
-  { href: "#reviews", label: "Reviews" },
-  { href: "#visit", label: "Visit" },
-];
+  { to: "/", label: "Home", exact: true },
+  { to: "/about", label: "About", exact: false },
+  { to: "/services", label: "Services", exact: false },
+  { to: "/reviews", label: "Reviews", exact: false },
+  { to: "/contact", label: "Contact", exact: false },
+] as const;
 
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -17,7 +19,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b-2 border-brass bg-espresso/95 backdrop-blur-sm">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
-        <a href="#top" className="flex items-center gap-3 text-cream">
+        <Link to="/" className="flex items-center gap-3 text-cream">
           <BarberPole />
           <span className="leading-tight">
             <span className="block font-display text-lg font-bold tracking-wide">
@@ -27,17 +29,19 @@ export function Header() {
               Est. {SHOP.established} · Algonquin, IL
             </span>
           </span>
-        </a>
+        </Link>
 
         <div className="hidden items-center gap-4 md:flex">
           {LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
+            <Link
+              key={l.to}
+              to={l.to}
+              activeOptions={{ exact: l.exact }}
+              activeProps={{ className: "text-brass-bright" }}
               className="font-condensed text-sm uppercase tracking-[0.12em] text-cream transition-colors hover:text-brass-bright"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
           <BookButton size="sm" />
           <Button asChild size="sm" className="bg-cream text-espresso hover:bg-white border-0">
@@ -60,14 +64,16 @@ export function Header() {
       {open && (
         <div className="flex flex-col gap-4 border-t border-brass/40 bg-espresso px-5 py-5 md:hidden">
           {LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
+            <Link
+              key={l.to}
+              to={l.to}
+              activeOptions={{ exact: l.exact }}
+              activeProps={{ className: "text-brass-bright" }}
               onClick={() => setOpen(false)}
               className="font-condensed text-base uppercase tracking-[0.12em] text-cream"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
           <BookButton className="w-full" />
           <Button asChild className="w-full bg-cream text-espresso hover:bg-white border-0">
