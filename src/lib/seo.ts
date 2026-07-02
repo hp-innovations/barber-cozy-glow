@@ -1,7 +1,8 @@
 // Centralized SEO config + helpers.
-// Change BASE_URL here to point canonical/OG tags at your own domain
-// (e.g. "https://corelinkdev.com/barbershop").
-export const BASE_URL = "https://barber-cozy-glow.lovable.app";
+// Set VITE_SITE_URL per-deployment to point canonical/OG tags at that
+// deployment's own domain (e.g. "https://corelinkdev.com/demo/barbershop").
+// Falls back to the default hosted URL when the env var is not set.
+export const BASE_URL = import.meta.env.VITE_SITE_URL ?? "https://barber-cozy-glow.lovable.app";
 
 export const SITE_NAME = "Algonquin Barber Shop";
 
