@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { absoluteUrl } from "../lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -82,8 +83,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "Algonquin Barber Shop" },
       { property: "og:type", content: "website" },
       { property: "og:site_name", content: "Algonquin Barber Shop" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: absoluteUrl("/og-image.jpg") },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@algonquinbarber" },
+      { name: "twitter:image", content: absoluteUrl("/og-image.jpg") },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
